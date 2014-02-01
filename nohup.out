@@ -1,0 +1,92 @@
+Traceback (most recent call last):
+  File "./webServer.py", line 57, in <module>
+    movement = Pyro.core.getProxyForURI("PYRONAME://robotmovement")
+  File "/usr/lib/pymodules/python2.7/Pyro/core.py", line 368, in getProxyForURI
+    return DynamicProxy(URI)
+  File "/usr/lib/pymodules/python2.7/Pyro/core.py", line 387, in __init__
+    URI=processStringURI(URI)
+  File "/usr/lib/pymodules/python2.7/Pyro/core.py", line 335, in processStringURI
+    NS=loc.getNS(host=hostname,port=port)
+  File "/usr/lib/pymodules/python2.7/Pyro/naming.py", line 176, in getNS
+    reply = self.sendSysCommand(NS_SYSCMD_LOCATION,host,port,trace,1,bcaddr)
+  File "/usr/lib/pymodules/python2.7/Pyro/naming.py", line 49, in sendSysCommand
+    result=self.__sendSysCommand(request, host, port, trace, logerrors, Pyro.constants.NSROLE_SECONDARY, bcaddr)
+  File "/usr/lib/pymodules/python2.7/Pyro/naming.py", line 152, in __sendSysCommand
+    ins,outs,exs = Pyro.protocol.safe_select([s],[],[s],timeout)
+  File "/usr/lib/pymodules/python2.7/Pyro/protocol.py", line 1243, in safe_select
+    return _selectfunction(r,w,e,delay)
+KeyboardInterrupt
+[I 140201 14:13:02 web:1447] 200 GET / (192.168.1.64) 76.46ms
+[I 140201 14:13:03 web:1447] 304 GET /www/stylesheet.css (192.168.1.64) 114.18ms
+[I 140201 14:13:08 web:1447] 304 GET / (192.168.1.64) 6.71ms
+[I 140201 14:13:08 web:1447] 304 GET /www/stylesheet.css (192.168.1.64) 7.91ms
+[I 140201 14:15:21 web:1447] 304 GET / (192.168.1.64) 8.43ms
+[E 140201 14:15:21 ioloop:435] Exception in callback <tornado.stack_context._StackContextWrapper object at 0xb654ce10>
+    Traceback (most recent call last):
+      File "/usr/lib/python2.7/dist-packages/tornado/ioloop.py", line 421, in _run_callback
+        callback()
+      File "./webServer.py", line 41, in count
+        self.write_message(json.dumps(world))
+      File "/usr/lib/python2.7/dist-packages/tornado/websocket.py", line 144, in write_message
+        self.ws_connection.write_message(message, binary=binary)
+    AttributeError: 'NoneType' object has no attribute 'write_message'
+[I 140201 14:15:22 web:1447] 304 GET /www/stylesheet.css (192.168.1.64) 9.37ms
+[E 140201 14:46:25 ioloop:435] Exception in callback <tornado.stack_context._StackContextWrapper object at 0xb6542600>
+    Traceback (most recent call last):
+      File "/usr/lib/python2.7/dist-packages/tornado/ioloop.py", line 421, in _run_callback
+        callback()
+      File "./webServer.py", line 41, in count
+        self.write_message(json.dumps(world))
+      File "/usr/lib/python2.7/dist-packages/tornado/websocket.py", line 144, in write_message
+        self.ws_connection.write_message(message, binary=binary)
+    AttributeError: 'NoneType' object has no attribute 'write_message'
+[E 140201 14:51:20 ioloop:435] Exception in callback <tornado.stack_context._StackContextWrapper object at 0xb6563ba0>
+    Traceback (most recent call last):
+      File "/usr/lib/python2.7/dist-packages/tornado/ioloop.py", line 421, in _run_callback
+        callback()
+      File "./webServer.py", line 40, in count
+        world = movement.all()
+      File "/usr/lib/pymodules/python2.7/Pyro/core.py", line 381, in __call__
+        return self.__send(self.__name, args, kwargs)
+      File "/usr/lib/pymodules/python2.7/Pyro/core.py", line 456, in _invokePYRO
+        return self.adapter.remoteInvocation(name, Pyro.constants.RIF_VarargsAndKeywords, vargs, kargs)
+      File "/usr/lib/pymodules/python2.7/Pyro/protocol.py", line 457, in remoteInvocation
+        return self._remoteInvocation(method, flags, *args)
+      File "/usr/lib/pymodules/python2.7/Pyro/protocol.py", line 487, in _remoteInvocation
+        ver,answer,pflags = self.receiveMsg(self.conn,1)  # read the server's response, send no further replies
+      File "/usr/lib/pymodules/python2.7/Pyro/protocol.py", line 583, in receiveMsg
+        msg=sock_recvmsg(conn.sock, self.headerSize, self.timeout)
+      File "/usr/lib/pymodules/python2.7/Pyro/protocol.py", line 103, in sock_recvmsg
+        raise ConnectionClosedError('connection lost: %s' % x)
+    ConnectionClosedError: connection lost: [Errno 104] Connection reset by peer
+[E 140201 14:51:58 ioloop:435] Exception in callback <tornado.stack_context._StackContextWrapper object at 0xb6505ae0>
+    Traceback (most recent call last):
+      File "/usr/lib/python2.7/dist-packages/tornado/ioloop.py", line 421, in _run_callback
+        callback()
+      File "./webServer.py", line 40, in count
+        world = movement.all()
+      File "/usr/lib/pymodules/python2.7/Pyro/core.py", line 381, in __call__
+        return self.__send(self.__name, args, kwargs)
+      File "/usr/lib/pymodules/python2.7/Pyro/core.py", line 455, in _invokePYRO
+        self.adapter.bindToURI(self.URI)
+      File "/usr/lib/pymodules/python2.7/Pyro/protocol.py", line 290, in bindToURI
+        raise ProtocolError('connection failed')
+    ProtocolError: connection failed
+ERROR: you need to install Python Image Library to make pictures
+Traceback (most recent call last):
+  File "platform.py", line 15, in <module>
+    import md25
+  File "/home/pi/python/robot_pi/pyro/md25.py", line 4, in <module>
+    import time, platform, array
+  File "/home/pi/python/robot_pi/pyro/platform.py", line 54, in <module>
+    m=md25.Md25()
+AttributeError: 'module' object has no attribute 'Md25'
+ERROR: you need to install Python Image Library to make pictures
+Traceback (most recent call last):
+  File "platform.py", line 15, in <module>
+    import md25
+  File "/home/pi/python/robot_pi/pyro/md25.py", line 4, in <module>
+    import time, platform, array
+  File "/home/pi/python/robot_pi/pyro/platform.py", line 54, in <module>
+    m=md25.Md25()
+AttributeError: 'module' object has no attribute 'Md25'
