@@ -90,14 +90,3 @@ Traceback (most recent call last):
   File "/home/pi/python/robot_pi/pyro/platform.py", line 54, in <module>
     m=md25.Md25()
 AttributeError: 'module' object has no attribute 'Md25'
-ERROR: you need to install Python Image Library to make pictures
-ERROR: you need to install Python Image Library to make pictures
-self full_circle = 736.609374261
-Robot ready
-Traceback (most recent call last):
-  File "./robotPlatform.py", line 75, in <module>
-    ins, outs, exs = select.select(socks, [], [], 0.1)# 0 seconds time-out = poll, do not block.
-KeyboardInterrupt
-self full_circle = 736.609374261
-Robot ready
-failed to register name

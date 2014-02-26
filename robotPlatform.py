@@ -63,7 +63,11 @@ if __name__ == "__main__":
     ns = Pyro.naming.NameServerLocator().getNS()        # find the name server.
     daemon = Pyro.core.Daemon()                         # create daemon
     daemon.useNameServer(ns)                            # Using the name-server discovered..
-    uri = daemon.connect(Movement(m),"robotmovement")   # ..connect Movement object.
+    try:
+        uri = daemon.connect(Movement(m),"robotmovement")   # ..connect Movement object.
+    except:
+        print "failed to register name"
+        sys.exit()
     lastTime = time.time()
 
     while running:

@@ -1,12 +1,14 @@
 # based on epuck.py
 
-import time
+import robot
+import time, platform, array
 import math
 import smbus
-
+import time
 import wii
 import sonar
 import bumpers
+import maps
 
 MD25_SPEED    = 0
 MD25_ROTATE   = 1
@@ -22,18 +24,33 @@ MD25_COMMAND  = 16
 
 MD25_ADDRESS = 0x5A
 
-class Md25():
+emptySet =    {"ir": [0,0],
+               "sonar": [0,0,0,0],
+               "bump": [False,False],
+               "cliff": [False,False] ,
+               "battery": [0.0],
+               "pose": [0.0, 0.0, 0.0],
+               'compass':[0.00],
+               "count":[0,0],
+               "motion":[0.0,0.0],
+               "time":[0.0],
+               "camera":[None, None, None, None],
+               }
+
+class Md25(robot.Robot):
 
     def __init__(self):
         """
         call Robot __init__ and set up own instance vars 
         """
+        robot.Robot.__init__(self)
+
         self.wheel_spacing=21.2		# cm  taken down .2
         self.wheel_circumference=32.55	# cm	
         self.wheel_counts_per_rev = 360.0	# 
         self.cm_per_tick = (self.wheel_circumference/self.wheel_counts_per_rev)
         self.full_circle =  self.wheel_counts_per_rev*((self.wheel_spacing*math.pi)/self.wheel_circumference)
-        print "self full_circle =",self.full_circle
+	print "self full_circle =",self.full_circle
 
         self.robotinfo = {'robot': ['md25'],
                           'robot-version': ['0.2'],
@@ -49,19 +66,8 @@ class Md25():
                        "motion":[0.0,0.0],
                        "time":[0.0],
                        "camera":[None, None, None, None],
+#                       "move":[0.0, 0.0],
                        }
-        self.config = { "ir": 2, 
-                        "sonar":4, 
-                        "bump":2, 
-                        "cliff":2, 
-                        "battery":1, 
-                        "compass":1, 
-                        "pose":3, 
-                        "count":2, 
-                        "time":1, 
-                        "camera":4, 
-                        "motion":2, 
-                        }
         
         self.i2c = smbus.SMBus(1)
         
@@ -91,6 +97,9 @@ class Md25():
         self.safe = True                # prevent forward motion if bump or cliff sensors active
 
         self.reset()
+    
+    def info(self):
+        return self.robotinfo
 
     def reset(self):
         """
@@ -108,6 +117,7 @@ class Md25():
         self.x = 0.0
         self.y = 0.0
         self.theta = 0.0
+        self.newSonarMap()
 
         print 'Robot ready'
 
@@ -140,7 +150,7 @@ class Md25():
             self.theta = self.theta-(2*math.pi)
 
         
-    def _send(self, register, data):                            #### ALL i2c DATA TO GO THROUGH THIS CALL !! 
+    def _send(self, register, data):                            #### ALL COMES TO GO THROUGH THIS CALL !! 
         """
         All messages to i2c go via this method.
         """
@@ -150,6 +160,45 @@ class Md25():
         else:
             output = self.i2c.write_byte_data(MD25_ADDRESS, register, data)
             return output
+
+    def close(self):
+        """
+        Close serial port.
+        """
+        if self.port.isOpen():
+            print 'Disconnecting from md25 on %s' % self.id
+            self.port.close()
+
+    def manual_flush(self):
+        print '\nInterrupted...please wait'
+        self._clearLines()
+
+    def hardStop(self):
+        self.move(0,0)
+        self._lastTranslate = 0
+        self._lastRotate = 0
+
+    def getSpeed(self):
+        return (self._lastTranslate, self._lastRotate)
+
+    def getTranslate(self):
+        return self._lastTranslate
+
+    def getRotate(self):
+        return self._lastRotate
+
+    def getMotors(self):
+        print "getMotors NOT IMPLEMENTED"
+        return [1000.0,1000.0]
+
+    def newSonarMap(self):
+        self.sonarMap = maps.SonarMap([self.x, self.y, self.theta], self._getTime(0))
+
+    def getSonarMap(self):
+        l = [[self.x, self.y, self.theta]]
+        l.append(self.time)
+        l.append(self.sonarMap.list())
+        return l
 
 # MOVEMENT functions =============================================================================
 
@@ -186,41 +235,104 @@ class Md25():
     
 # GET SENSOR DATA =============================================================================
 
-    def getTranslate(self):
-        return self._lastTranslate
-
-    def getRotate(self):
-        return self._lastRotate
-
-    def get(self, sensor, update):
+    def get(self, sensor, update, *positions):
         '''
         get('all') - return all sensors, all positions
         get('config') - return list of sensors, and their number
         get('name') - return name of robot
+        get(<sensor>, <n>,<m>) - return sensor values for positions n and m.
+        
+        self._get<Sensor>(position) called for each sensor and position requested
+
+        forces update of all sensors if update=True.  THIS IS A PROBLEM!!
         '''
         if update:
            self.update()                  # Update sensor values
         sensor = sensor.lower()                 
         if sensor == "config":                  # return number and types of sensors
-            return self.config
+            return {"ir": 2, "sonar":4, "bump":2, "cliff":2, "battery":1, "compass":1, "pose":3, "count":2, "time":1, "camera":4, "motion":2}
         elif sensor == "name":                  # robot name
             return self.name
-        elif sensor == "all":           # 'all' returns all sensors, all positions
-            return self.sensor
-#            return {"ir"     : [ self._getIR(0), self._getIR(0), ],
-#                    "sonar"  : [ self._getSonar(0), self._getSonar(1), self._getSonar(2), self._getSonar(3), ],
-#                    "bump"   : [ self._getBump(0), self._getBump(1), ],
-#                    "cliff"  : [ self._getCliff(0), self._getCliff(1), ],
-#                    "battery": [ self._getBattery(0), ],
-#                    "pose"   : [ self._getPose(0), self._getPose(1), self._getPose(2), ],
-#                    "compass": [ self._getCompass(0), ], 
-#                    "count"  : [ self._getCount(0), self._getCount(1), ],
-#                    "motion" : [ self._getMotion(0), self._getMotion(1), ],
-#                    "time"   : [ self._getTime(0), ],
-#                    "camera" : [ self._getCamera(0), self._getCamera(1), self._getCamera(2), self._getCamera(3), ],
-#                     }
-
-
+        else:
+            retvals = []
+            if len(positions) == 0:             # if called with no position args, return all positions 
+                if sensor == "ir":
+                    return self.get("ir", False, 0, 1)
+                elif sensor == "sonar":             # 'elif' checks multiple blocks of 'elif's and on running a matching block, proceeds to 'else' ..
+                    return self.get("sonar", False, 0, 1, 2, 3)
+                elif sensor == "bump":
+                    return self.get("bump", False, 0, 1)
+                elif sensor == "cliff":
+                    return self.get("cliff", False, 0, 1)
+                elif sensor == "battery":
+                    return self.get("battery", False, 0)
+                elif sensor == "compass":
+                    return self.get("compass", False, 0)
+                elif sensor == "pose":
+                    return self.get("pose", False, 0, 1, 2)
+                elif sensor == "count":
+                    return self.get("count", False, 0, 1)
+                elif sensor == "motion":
+                    return self.get("motion", False, 0, 1)
+                elif sensor == "time":
+                    return self.get("time", False, 0)
+                elif sensor == "camera":
+                    return self.get("camera", False, 0, 1, 2, 3)
+                elif sensor == "motion":
+                    return self.get("motion", False, 0, 1)
+                
+                elif sensor == "all":           # 'all' returns all sensors, all positions
+                    return {"ir"     : self.get("ir", False), 
+                            "sonar"  : self.get("sonar", False),
+                            "bump"   : self.get("bump", False),
+                            "cliff"  : self.get("cliff", False), 
+                            "battery": self.get("battery", False),
+                            "pose"   : self.get("pose", False), 
+                            "compass": self.get("compass", False), 
+                            "count"  : self.get("count", False), 
+                            "motion" : self.get("motion", False), 
+                            "time"   : self.get("time", False), 
+                            "camera" : self.get("camera", False), 
+			                 }
+                elif sensor == "sonarmaprect":           # 
+                    return self.sonarMap.listRect()
+                else:
+                    print "invalid sensor name: '%s'" % (sensor)
+                    return None
+            for position in positions:
+                if position in ["left", "right"]:
+                     position = ["left", "right"].index(position)
+                else:
+                     position = int(position)
+                if sensor == "ir":
+                    retvals.append(self._getIR(position))
+                elif sensor == "sonar":
+                    retvals.append(self._getSonar(position))
+                elif sensor == "bump":
+                    retvals.append(self._getBump(position))
+                elif sensor == "cliff":
+                    retvals.append(self._getCliff(position))
+                elif sensor == "battery":
+                    retvals.append(self._getBattery(position))
+                elif sensor == "compass":
+                    retvals.append(self._getCompass(position))
+                elif sensor == "pose":
+                    retvals.append(self._getPose(position))
+                elif sensor == "count":
+                    retvals.append(self._getCount(position))
+                elif sensor == "motion":
+                    retvals.append(self._getMotion(position))
+                elif sensor == "time":
+                    retvals.append(self._getTime(position))
+                elif sensor == "camera":
+                    retvals.append(self._getCamera(position))
+                else:
+                    print "invalid sensor name: '%s'" % (sensor)
+            if len(retvals) == 1:
+                return retvals[0]
+            else:
+                return retvals
+            
     def update(self):
         b = self._send(-1,0)   # returns byte array of registers 0-15
         sp1    = b[MD25_SPEED]
@@ -238,10 +350,10 @@ class Md25():
         self.position_update()
 
         self.sensor['bump']   = [self.bumpers.data[0],self.bumpers.data[1]]
-        self.sensor['cliff']  = [self.bumpers.data[2],self.bumpers.data[3]]
+        self.sensor['cliff']   = [self.bumpers.data[2],self.bumpers.data[3]]
         self.sensor['ir']     = [0, 0]
         self.sensor['sonar']  = self.sonar.data
-        self.sensor['camera'] = self.wii.data
+        self.sensor['camera']  = self.wii.data
         self.sensor['count']  = [self.encoder1, self.encoder2]
         self.sensor['battery']= [volts]
         self.sensor['compass']= [compass]
@@ -250,9 +362,50 @@ class Md25():
             angle = 0.0-((2*math.pi)-angle)
         self.sensor['pose']   = [self.x, self.y, angle]
 
-        self.sensor['motion'] = [self.getTranslate(), self.getRotate()]
-        self.sensor['time']   = [int(1000*(time.time()-self.startTime))/1000.0]
+        self.sensor['motion']   = [self.getTranslate(), self.getRotate()]
+        self.sensor['time']   = self._getTime(0)
+        self.sonarMap.setAll(self.sensor['pose'][2], (self.sensor['sonar']))
 
         if self.safe:
             if (True in self.sensor['bump'] or True in self.sensor['cliff']) and (self.sensor['motion'][0]>0.0 or self.sensor['motion'][1]!=0.0):
                 self.stop()
+
+# _REALLY_ GET SENSOR DATA =============================================================================
+    def _getIR(self, position):
+        return self.sensor['ir'][position]
+
+    def _getSonar(self, position):
+        return self.sensor['sonar'][position]
+
+    def _getCamera(self, position):
+        return self.sensor['camera'][position]
+
+    def _getBump(self, position):
+        #self.updateBumpAndCliff()
+        return self.sensor['bump'][position]
+
+    def _getCliff(self, position):
+        #self.updateBumpAndCliff()
+        return self.sensor['cliff'][position]
+    
+    def _getBattery(self, position):
+        if len(self.sensor['battery'])>1:
+            return self.sensor['battery'][position]
+        else:
+            return self.sensor['battery']
+
+    def _getCompass(self, position):
+        return self.sensor['compass']
+
+    def _getCount(self, position):
+        return self.sensor['count'][position]
+
+    def _getPose(self, position):
+        return self.sensor['pose'][position]
+
+    def _getMotion(self, position):
+        return self.sensor['motion'][position]
+
+    def _getTime(self, position):
+        return [int(1000*(time.time()-self.startTime))/1000.0]
+

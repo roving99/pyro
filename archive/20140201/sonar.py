@@ -26,8 +26,7 @@ class Sonar():
         self.i2c.write_byte_data(self.addrs[n], 0, 81)
 
     def read(self, n):
-        data = self.i2c.read_byte_data(self.addrs[n], 2)<<8
-        data += self.i2c.read_byte_data(self.addrs[n], 3)
+        data = self.i2c.read_word_data(self.addrs[n], 2)/256
         return data
 
 if __name__=="__main__":
@@ -37,5 +36,5 @@ if __name__=="__main__":
         t = time.time()
         sonar.update()
 	print sonar.data
-#        print time.time()-t
+        print time.time()-t
         time.sleep(.1)
