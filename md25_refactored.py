@@ -28,8 +28,6 @@ class Md25():
         """
         call Robot __init__ and set up own instance vars 
         """
-        robot.Robot.__init__(self)
-
         self.wheel_spacing=21.2		# cm  taken down .2
         self.wheel_circumference=32.55	# cm	
         self.wheel_counts_per_rev = 360.0	# 
@@ -110,7 +108,6 @@ class Md25():
         self.x = 0.0
         self.y = 0.0
         self.theta = 0.0
-        self.newSonarMap()
 
         print 'Robot ready'
 
@@ -189,6 +186,12 @@ class Md25():
     
 # GET SENSOR DATA =============================================================================
 
+    def getTranslate(self):
+        return self._lastTranslate
+
+    def getRotate(self):
+        return self._lastRotate
+
     def get(self, sensor, update):
         '''
         get('all') - return all sensors, all positions
@@ -249,7 +252,6 @@ class Md25():
 
         self.sensor['motion'] = [self.getTranslate(), self.getRotate()]
         self.sensor['time']   = [int(1000*(time.time()-self.startTime))/1000.0]
-        self.sonarMap.setAll(self.sensor['pose'][2], (self.sensor['sonar']))
 
         if self.safe:
             if (True in self.sensor['bump'] or True in self.sensor['cliff']) and (self.sensor['motion'][0]>0.0 or self.sensor['motion'][1]!=0.0):
