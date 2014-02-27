@@ -3,7 +3,6 @@
     <head>
         <meta charset="utf-8">
         <link type="text/css" rel="stylesheet" href="www/stylesheet.css">
-        <script type="text/javascript" src='www/javascript.js'></script>
     </head>
 
     <body>
@@ -29,13 +28,16 @@
             <div id="sonar4" class="bargraph">back</div>
         </div>
         <div>
-          <p style="display:inline"><img id="camera" src="http://192.168.1.98:8080/?action=stream"/></p>
+     <!--     <p style="display:inline"><img id="camera" width="320" height="240" src="http://192.168.1.98:8080/?action=stream"/></p>  -->
           <p style="display:inline"><canvas id="ircamera" width="320" height="240"></canvas></p>
+          <p style="display:inline"><canvas id="map" width="320" height="240"></canvas></p>
+          <p style="display:inline"><canvas id="joystick" width="320" height="240"></canvas></p>
         </div>
         <div id="messages"></div>
         <div id="footer">
         This Webpage bought to you by Python, pyro, tornado and mjpgStreamer. And me.
         <div>
     </body>
+    <script type="text/javascript" src='www/javascript.js'></script>
 </html>
 

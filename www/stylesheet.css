@@ -98,3 +98,13 @@ body {
     margin: 5px;
     }
 
+#map {
+    border: solid 1px white;
+    margin: 5px;
+    }
+
+#joystick {
+    border: solid 1px white;
+    margin: 5px;
+    }
+

@@ -8,7 +8,7 @@ function WebSocketTest() {
     var messageContainer = document.getElementById("messages");
     if ("WebSocket" in window) {
         messageContainer.innerHTML = "WebSocket is supported by your Browser!";
-        var ws = new WebSocket("ws://192.168.1.98:8888/ws?Id=123456789");
+        var ws = new WebSocket("ws://localhost:8888/ws?Id=123456789");
 
         ws.onopen = function() {
             ws.send("Message to send");
@@ -78,4 +78,42 @@ function irCamera(ir) { // ir = [ [x,y,w],null,null,null ]
         }
 //    icontext.stroke();
     };
+
+function getMousePos(canvas, e) {
+    var rect = canvas.getBoundingClientRect();
+    return { x: e.clientX-rect.left, y: e.clientY-rect.top};
+    }
+
+function joyMouseDown(e) {
+    var pos = getMousePos(joyCanvas, e);
+
+    joyDraw();
+    joyContext.strokeStyle = "white";
+    joyContext.fillStyle = "red";
+    joyContext.beginPath();
+    joyContext.arc(pos.x, pos.y, 10, 0.0, Math.PI*2);
+    joyContext.fill();
+    console.log('you clicked');
+    }
+
+function joyDraw() {
+    var x = joyCanvas.width;
+    var y = joyCanvas.height;
+    var w = 40;
+
+    joyContext.strokeStyle = "white";
+    joyContext.fillStyle = "blue";
+    joyContext.moveTo(x/2, y/2);    
+    joyContext.arc(x/2, y/2, 100, 0.0, Math.PI*2);
+    joyContext.strokeRect(x/2-2*w,y/2-2*w, 2*2*w,2*2*w);
+    console.log('draw joystick');
+    }
+
+var joyCanvas = document.getElementById("joystick");
+var joyContext = joyCanvas.getContext("2d");
+
+joyDraw();
+joyCanvas.addEventListener('mousedown', joyMouseDown);
+
+
 

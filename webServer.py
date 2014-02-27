@@ -18,6 +18,7 @@ clients = dict() # we store clients in dictionary..
 class IndexHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def get(self):
+        print "GET received"
         self.render("www/index.html")
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
@@ -25,6 +26,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         self.id = self.get_argument("Id")
         clients[self.id] = {"id": self.id, "object": self}
         tornado.ioloop.IOLoop.instance().add_timeout(datetime.timedelta(seconds=1),self.count)
+        print "WebSocket opened"
 
     def on_message(self, message):        
         self.write_message(u"yo!")
@@ -33,6 +35,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def on_close(self):
         if self.id in clients:
             del clients[self.id]
+            print "WebSocket closed"
 
     def count(self):
         global c
@@ -55,6 +58,8 @@ app = tornado.web.Application([
 if __name__ == '__main__':
 
     movement = Pyro.core.getProxyForURI("PYRONAME://robotmovement")
+
+    print "NameSever returned", movement
 
     parse_command_line()
     app.listen(options.port)
