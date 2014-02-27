@@ -1,9 +1,6 @@
 #!/usr/bin/python
 
-try:
-    import smbus
-except:
-    print "No smbus module"
+import smbus
 import time
 
 class Sonar():
@@ -29,12 +26,7 @@ class Sonar():
         self.i2c.write_byte_data(self.addrs[n], 0, 81)
 
     def read(self, n):
-<<<<<<< HEAD
         data = self.i2c.read_word_data(self.addrs[n], 2)/256
-=======
-        data = self.i2c.read_byte_data(self.addrs[n], 2)<<8
-        data += self.i2c.read_byte_data(self.addrs[n], 3)
->>>>>>> origin
         return data
 
 if __name__=="__main__":
@@ -44,9 +36,5 @@ if __name__=="__main__":
         t = time.time()
         sonar.update()
 	print sonar.data
-<<<<<<< HEAD
         print time.time()-t
-=======
-#        print time.time()-t
->>>>>>> origin
         time.sleep(.1)

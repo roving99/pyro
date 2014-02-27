@@ -1,9 +1,6 @@
 #!/usr/bin/python
 
-try:
-    import smbus
-except:
-    print "No smbus module"
+import smbus
 import time
 '''
 retrieve data from wii ir camera.
