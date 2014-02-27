@@ -2,7 +2,11 @@
 
 import time
 import math
-import smbus
+
+try:
+    import smbus
+except:
+    print "NO smbus module!"
 
 import wii
 import sonar
@@ -24,7 +28,7 @@ MD25_ADDRESS = 0x5A
 
 class Md25():
 
-    def __init__(self):
+    def __init__(self, fake=False):
         """
         call Robot __init__ and set up own instance vars 
         """
@@ -33,17 +37,16 @@ class Md25():
         self.wheel_counts_per_rev = 360.0	# 
         self.cm_per_tick = (self.wheel_circumference/self.wheel_counts_per_rev)
         self.full_circle =  self.wheel_counts_per_rev*((self.wheel_spacing*math.pi)/self.wheel_circumference)
-        print "self full_circle =",self.full_circle
 
         self.robotinfo = {'robot': ['md25'],
                           'robot-version': ['0.2'],
                           }
         self.sensor = {"ir": [1,2],
-                       "sonar": [1,2,3,4],
+                       "sonar": [10,20,30,40],
                        "bump": [False,False],
                        "cliff": [False,False] ,
-                       "battery": [9],
-                       "pose": [4.0, 2.0, 0.5],
+                       "battery": [13.0],
+                       "pose": [0.0, 0.0, 0.0],
                        'compass':[0.25],
                        "count":[0,0],
                        "motion":[0.0,0.0],
@@ -63,19 +66,26 @@ class Md25():
                         "motion":2, 
                         }
         
-        self.i2c = smbus.SMBus(1)
-        
-        self.wii = wii.Wii(self.i2c)
-        self.sonar = sonar.Sonar(self.i2c)
-        self.bumpers = bumpers.Bumpers()
+        self.fake = fake
+
+        if (self.fake):
+            self.i2c = None
+            self.wii = None
+            self.sonar = None
+            self.bumpers = None
+        else:
+            self.i2c = smbus.SMBus(1)
+            self.wii = wii.Wii(self.i2c)
+            self.sonar = sonar.Sonar(self.i2c)
+            self.bumpers = bumpers.Bumpers()
 
         self.name = "md25"              # robot name
         self.version = "0.5"            # version number    
         self.startTime = time.time()    # mission time
 
-        self.lastUpdate = None          # time (s since epoch) of last update - used to move simulated robot.
-        self.tranSpeed = 10.0           # Translational speed of simulated robot at 1.0 forward. cm/s.
-        self.rotSpeed = math.pi/4.0     # Rotational simulated robot at 1.0 rot. rad/s.
+        self.lastUpdate = time.time()   # time (s since epoch) of last update - used to move simulated robot.
+        self.tranSpeed = 200            # Translational speed of simulated robot at 1.0 forward. clicks/s.
+        self.rotSpeed = 200             # Rotational simulated robot at 1.0 rot. clicks/s.
 
         self._lastTranslate = 0.0
         self._lastRotate = 0.0
@@ -96,9 +106,12 @@ class Md25():
         """
         reset robot. zero location.
         """
-        self._send(MD25_COMMAND, 0x20)		# reset counters
-        self._send(MD25_COMMAND, 0x31)		# set automatic speed regulation
-        self._send(MD25_MODE, 0x02)		# set mode to speed, turn. Centre = 128
+        if self.fake:
+            pass
+        else:
+            self._send(MD25_COMMAND, 0x20)		# reset counters
+            self._send(MD25_COMMAND, 0x31)		# set automatic speed regulation
+            self._send(MD25_MODE, 0x02)		# set mode to speed, turn. Centre = 128
         self._lastTranslate = 0
         self._lastRotate = 0
         self.last_encoder1 = 0
@@ -179,10 +192,11 @@ class Md25():
 
         self._lastTranslate = translate
         self._lastRotate = rotate
-        hexRotate = 0x80+int(rotate*16.0)
-        hexTranslate = 0x80+int(translate*16.0)
-        self._send(MD25_SPEED, hexTranslate)
-        self._send(MD25_ROTATE, hexRotate)
+        if not self.fake:
+            hexRotate = 0x80+int(rotate*16.0)
+            hexTranslate = 0x80+int(translate*16.0)
+            self._send(MD25_SPEED, hexTranslate)
+            self._send(MD25_ROTATE, hexRotate)
     
 # GET SENSOR DATA =============================================================================
 
@@ -199,7 +213,11 @@ class Md25():
         get('name') - return name of robot
         '''
         if update:
-           self.update()                  # Update sensor values
+            if self.fake:
+                self.updateFake()
+            else:
+                self.update()                  # Update sensor values
+
         sensor = sensor.lower()                 
         if sensor == "config":                  # return number and types of sensors
             return self.config
@@ -207,19 +225,6 @@ class Md25():
             return self.name
         elif sensor == "all":           # 'all' returns all sensors, all positions
             return self.sensor
-#            return {"ir"     : [ self._getIR(0), self._getIR(0), ],
-#                    "sonar"  : [ self._getSonar(0), self._getSonar(1), self._getSonar(2), self._getSonar(3), ],
-#                    "bump"   : [ self._getBump(0), self._getBump(1), ],
-#                    "cliff"  : [ self._getCliff(0), self._getCliff(1), ],
-#                    "battery": [ self._getBattery(0), ],
-#                    "pose"   : [ self._getPose(0), self._getPose(1), self._getPose(2), ],
-#                    "compass": [ self._getCompass(0), ], 
-#                    "count"  : [ self._getCount(0), self._getCount(1), ],
-#                    "motion" : [ self._getMotion(0), self._getMotion(1), ],
-#                    "time"   : [ self._getTime(0), ],
-#                    "camera" : [ self._getCamera(0), self._getCamera(1), self._getCamera(2), self._getCamera(3), ],
-#                     }
-
 
     def update(self):
         b = self._send(-1,0)   # returns byte array of registers 0-15
@@ -242,6 +247,44 @@ class Md25():
         self.sensor['ir']     = [0, 0]
         self.sensor['sonar']  = self.sonar.data
         self.sensor['camera'] = self.wii.data
+        self.sensor['count']  = [self.encoder1, self.encoder2]
+        self.sensor['battery']= [volts]
+        self.sensor['compass']= [compass]
+        angle = self.theta
+        if angle>math.pi:
+            angle = 0.0-((2*math.pi)-angle)
+        self.sensor['pose']   = [self.x, self.y, angle]
+
+        self.sensor['motion'] = [self.getTranslate(), self.getRotate()]
+        self.sensor['time']   = [int(1000*(time.time()-self.startTime))/1000.0]
+
+        if self.safe:
+            if (True in self.sensor['bump'] or True in self.sensor['cliff']) and (self.sensor['motion'][0]>0.0 or self.sensor['motion'][1]!=0.0):
+                self.stop()
+                
+    def updateFake(self):
+        secondsPassed = time.time()-self.lastUpdate         # time in secs since last update
+        self.lastUpdate = time.time()
+        self.encoder1 += self.tranSpeed*secondsPassed*self.getTranslate()
+        self.encoder2 += self.tranSpeed*secondsPassed*self.getTranslate()
+        self.encoder1 += self.rotSpeed*secondsPassed*self.getRotate()
+        self.encoder2 -= self.rotSpeed*secondsPassed*self.getRotate()
+
+        if self.encoder1>((1<<31)-1): self.encoder1-=(1<<32)
+        if self.encoder2>((1<<31)-1): self.encoder2-=(1<<32)
+        volts  = self.sensor['battery'][0]-0.0000001
+        compass= 0.0
+
+        #self.sonar.update()
+        #self.wii.update()
+        #self.bumpers.update()
+        self.position_update()
+
+        self.sensor['bump']   = [False, False]
+        self.sensor['cliff']  = [False, False]
+        self.sensor['ir']     = [0, 0]
+        #self.sensor['sonar']  = self.sonar.data
+        #self.sensor['camera'] = self.wii.data
         self.sensor['count']  = [self.encoder1, self.encoder2]
         self.sensor['battery']= [volts]
         self.sensor['compass']= [compass]

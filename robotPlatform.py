@@ -12,7 +12,7 @@ import select
 import Pyro.core
 import Pyro.naming
 
-import md25
+import md25_refactored as md25
 
 class Movement(Pyro.core.ObjBase):
 
@@ -53,7 +53,7 @@ class Movement(Pyro.core.ObjBase):
 world = []
 running = True
 
-m=md25.Md25()
+m=md25.Md25(fake=True)
 
 world = m.get('all',True)
 
