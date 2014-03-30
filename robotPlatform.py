@@ -14,6 +14,8 @@ import Pyro.naming
 
 import md25_refactored as md25
 
+import config
+
 class Movement(Pyro.core.ObjBase):
 
     def _setup(self, robot):
@@ -33,16 +35,16 @@ class Movement(Pyro.core.ObjBase):
         self.robot.move(0.0,0.0)
 
     def forward(self, move_time):
-        self.robot.move(0.4,0.0)
+        self.robot.move(0.2,0.0)
 
     def backward(self, move_time):
-        self.robot.move(-0.4,0.0)
+        self.robot.move(-0.2,0.0)
 
     def left(self, move_time):
-        self.robot.move(0.0,0.5)
+        self.robot.move(0.0,0.2)
    
     def right(self, move_time):
-        self.robot.move(0.0,-0.5)
+        self.robot.move(0.0,-0.2)
 
     def all(self):
         return world
@@ -53,7 +55,7 @@ class Movement(Pyro.core.ObjBase):
 world = []
 running = True
 
-m=md25.Md25(fake=True)
+m=md25.Md25(fake=config.config['fake'])
 
 world = m.get('all',True)
 

@@ -1,14 +1,13 @@
-//
 // 
 //
 
-var messageContainer = document.getElementById("messages");
+var ws;
 
 function WebSocketTest() {
     var messageContainer = document.getElementById("messages");
     if ("WebSocket" in window) {
         messageContainer.innerHTML = "WebSocket is supported by your Browser!";
-        var ws = new WebSocket("ws://localhost:8888/ws?Id=123456789");
+        ws = new WebSocket("ws://localhost:8888/ws?Id=123456789");
 
         ws.onopen = function() {
             ws.send("Message to send");
@@ -47,36 +46,30 @@ function actOnData(evt) {
     if (world.cliff[1]) { document.getElementById("rcliff").style.backgroundColor = "red"; }
                    else { document.getElementById("rcliff").style.backgroundColor = "green"; }
     
-    irCamera(world.camera);
+    irCamera(document.getElementById("ircamera"), world);
+    mapDraw2(document.getElementById("map"), world);
 
 };
 
-function irCamera(ir) { // ir = [ [x,y,w],null,null,null ] 
-    var icanvas = document.getElementById("ircamera");
-    var width = icanvas.width;
-    var height = icanvas.height;
+function irCamera(canvas, world) { // ir = [ [x,y,w],null,null,null ] 
+    var width = canvas.width;
+    var height = canvas.height;
+    var ir = world.ir
+    var context = canvas.getContext("2d");
 
-    var icontext = icanvas.getContext("2d");
-    icontext.strokeStyle = "white";
-    icontext.fillStyle = "red";
+    context.strokeStyle = "white";
+    context.fillStyle = "red";
     
-    icontext.clearRect(0, 0, width, height);
-    icontext.beginPath();
+    context.clearRect(0, 0, width, height);
+    context.beginPath();
     for (var i=0; i<4; i++) {
         if (ir[i]) {
             var x = (ir[i][0]/1024)*width;
             var y = (ir[i][1]/768)*height;
             var w = ir[i][2];
-            console.log(i);
-            icontext.strokeRect(x-2*w,y-2*w, 2*2*w,2*2*w);
-//            icontext.lineWidth = 2;
-//            icontext.moveTo(x,0);
-//            icontext.drawTo(x,height);
-//            icontext.moveTo(0,y);
-//            icontext.drawTo(width,y);
+            context.strokeRect(x-2*w,y-2*w, 2*2*w,2*2*w);
             }
         }
-//    icontext.stroke();
     };
 
 function getMousePos(canvas, e) {
@@ -84,10 +77,63 @@ function getMousePos(canvas, e) {
     return { x: e.clientX-rect.left, y: e.clientY-rect.top};
     }
 
+function joyDraw(Canvas) {
+    var x = Canvas.width;
+    var y = Canvas.height;
+    var w = 40;
+    var joyContext = Canvas.getContext("2d");
+
+    joyContext.strokeStyle = "white";
+    joyContext.fillStyle = "blue";
+    joyContext.beginPath();
+//    joyContext.moveTo(x/2, y/2);    
+    joyContext.arc(x/2, y/2, 100, 0.0, Math.PI*2);
+    joyContext.stroke();
+//    joyContext.strokeRect(x/2-2*w,y/2-2*w, 2*2*w,2*2*w);
+    }
+
+
+function robotDraw(canvas, x, y, th, world, zoom) {     // zoom=1 equates to 1cm = 1px.
+    var context = canvas.getContext("2d");
+    var w = canvas.width;
+    var h = canvas.height;
+
+    var size = 22/2; // cm
+    var origin_x = (w/2)-(y*zoom);
+    var origin_y = (h/2)-(x*zoom);
+
+    context.strokeStyle = "white";
+    context.fillStyle = "green";
+    context.save();
+    context.translate(origin_x,origin_y);
+    context.rotate(Math.PI/2.0-th);
+    context.strokeRect(-size*zoom, -size*zoom, 2*size*zoom, 2*size*zoom);
+    context.beginPath();
+    context.arc(-size*zoom*0.8, -size*zoom*0.8, size*zoom*0.08, 0.0, Math.PI*2);
+    context.arc(-size*zoom*0.8,  size*zoom*0.8, size*zoom*0.08, 0.0, Math.PI*2);
+    context.arc(-size*zoom*0.8, -size*zoom*0.6, size*zoom*0.08, 0.0, Math.PI*2);
+    context.arc(-size*zoom*0.8,  size*zoom*0.6, size*zoom*0.08, 0.0, Math.PI*2);
+    context.fill();
+    context.restore();
+    }
+
+function mapDraw2(canvas, world) {
+    var w = canvas.width;
+    var h = canvas.height;
+    var context = canvas.getContext("2d");
+    var x = world.pose[0];
+    var y = world.pose[1];
+    var th = world.pose[2];
+    var zoom = 2;// pixels per cm
+
+    context.clearRect(0, 0, w, h);
+    robotDraw(canvas, x, y, th, world, zoom);
+    }
+
 function joyMouseDown(e) {
     var pos = getMousePos(joyCanvas, e);
 
-    joyDraw();
+    joyDraw(joyCanvas);
     joyContext.strokeStyle = "white";
     joyContext.fillStyle = "red";
     joyContext.beginPath();
@@ -96,24 +142,25 @@ function joyMouseDown(e) {
     console.log('you clicked');
     }
 
-function joyDraw() {
-    var x = joyCanvas.width;
-    var y = joyCanvas.height;
-    var w = 40;
-
-    joyContext.strokeStyle = "white";
-    joyContext.fillStyle = "blue";
-    joyContext.moveTo(x/2, y/2);    
-    joyContext.arc(x/2, y/2, 100, 0.0, Math.PI*2);
-    joyContext.strokeRect(x/2-2*w,y/2-2*w, 2*2*w,2*2*w);
-    console.log('draw joystick');
+function docKeyDown(event) {
+    if(event.keyCode == 37) {
+        ws.send("left");
+        }
+    else if(event.keyCode == 39) {
+        ws.send("right");
+        }
+    else if(event.keyCode == 38) {
+        ws.send("forward");
+        }
+    else if(event.keyCode == 40) {
+        ws.send("backward");
+        }
+    else if(event.keyCode == 32) {
+        ws.send("stop");
+        }
     }
 
 var joyCanvas = document.getElementById("joystick");
-var joyContext = joyCanvas.getContext("2d");
 
-joyDraw();
 joyCanvas.addEventListener('mousedown', joyMouseDown);
-
-
-
+document.addEventListener('keydown', docKeyDown);
